@@ -886,7 +886,7 @@
     btn.disabled = true;
     btn.innerHTML = 'Submitting…';
 
-    const { error } = await sb.from('notes').insert([{ author, comment }]);
+    const { error } = await sb.from('notes').insert([{ author, note: comment }]);
 
     btn.disabled = false;
     btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:#fff"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg> Submit';
@@ -926,7 +926,7 @@
         <span class="note-author">${escapeHtml(note.author)}</span>
         <span class="note-date">${date}</span>
       </div>
-      <p class="note-comment">${escapeHtml(note.comment)}</p>
+      <p class="note-comment">${escapeHtml(note.note)}</p>
     </div>`;
   }
 
