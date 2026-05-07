@@ -892,7 +892,8 @@
     btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:#fff"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg> Submit';
 
     if (error) {
-      feedbackEl.textContent = 'Failed to save note. Please try again.';
+      console.error('Supabase insert error:', error);
+      feedbackEl.textContent = 'Error: ' + (error.message || JSON.stringify(error));
       feedbackEl.className = 'form-error';
       return;
     }
