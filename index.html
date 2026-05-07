@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Erick Bonifaz — CV | May 7, 2026</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -374,6 +375,74 @@
     .btn-apple:active { transform: scale(0.98); }
     .btn-apple svg { width: 16px; height: 16px; fill: #fff; }
 
+    /* ── Notes Form ── */
+    .notes-form {
+      background: var(--apple-surface-solid);
+      border: 1px solid var(--apple-border);
+      border-radius: var(--apple-radius);
+      box-shadow: var(--apple-shadow);
+      padding: 24px;
+      margin-bottom: 12px;
+    }
+    .form-group { margin-bottom: 16px; }
+    .form-group:last-of-type { margin-bottom: 20px; }
+    .form-label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--apple-secondary);
+      margin-bottom: 6px;
+      letter-spacing: -0.01em;
+    }
+    .form-input, .form-textarea {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--apple-border);
+      border-radius: var(--apple-radius-sm);
+      background: var(--apple-bg);
+      color: var(--apple-text);
+      font-family: inherit;
+      font-size: 0.9rem;
+      transition: border-color .2s, box-shadow .2s;
+      outline: none;
+    }
+    .form-input:focus, .form-textarea:focus {
+      border-color: var(--apple-blue);
+      box-shadow: 0 0 0 3px rgba(0,113,227,.12);
+      background: #fff;
+    }
+    .form-textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
+    .form-error { font-size: 0.78rem; color: #ff3b30; margin-top: 10px; }
+    .form-success { font-size: 0.85rem; color: #34c759; margin-top: 10px; font-weight: 500; }
+
+    /* ── Note Cards ── */
+    .notes-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+    .note-card {
+      background: var(--apple-surface-solid);
+      border: 1px solid var(--apple-border);
+      border-radius: var(--apple-radius-sm);
+      box-shadow: var(--apple-shadow);
+      padding: 18px 20px;
+      transition: box-shadow .2s, transform .2s;
+    }
+    .note-card:hover { box-shadow: var(--apple-shadow-hover); transform: translateY(-1px); }
+    .note-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .note-author { font-size: 0.9rem; font-weight: 600; color: var(--apple-text); letter-spacing: -0.01em; }
+    .note-date { font-size: 0.75rem; color: var(--apple-tertiary); }
+    .note-comment { font-size: 0.88rem; color: var(--apple-secondary); line-height: 1.65; letter-spacing: -0.01em; }
+    .note-empty { font-size: 0.9rem; color: var(--apple-tertiary); text-align: center; padding: 32px 0; }
+    .note-count {
+      font-size: 0.78rem;
+      color: var(--apple-tertiary);
+      text-align: right;
+      margin-bottom: 8px;
+    }
+
     @media (max-width: 580px) {
       .hero { padding: 56px 20px 40px; }
       .info-grid { grid-template-columns: 1fr 1fr; }
@@ -401,6 +470,7 @@
     <button class="nav-pill" data-section="experience">Experience</button>
     <button class="nav-pill" data-section="education">Education</button>
     <button class="nav-pill" data-section="skills">Skills</button>
+    <button class="nav-pill" data-section="notes">Notes</button>
   </div>
 </nav>
 
@@ -510,6 +580,28 @@
       <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zm-8 2V5h2v6h1.17L12 13.17 9.83 11H11zm-6 7h14v2H5v-2z"/></svg>
       Download CV
     </button>
+
+    <div class="section-label" style="margin-top: 40px;">Leave a Note</div>
+    <div class="notes-form">
+      <div class="form-group">
+        <label class="form-label" for="note-author">Author</label>
+        <input type="text" id="note-author" class="form-input" placeholder="Your name" maxlength="80" />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="note-comment">Comment</label>
+        <textarea id="note-comment" class="form-textarea" placeholder="Leave a comment…" maxlength="1000"></textarea>
+      </div>
+      <button class="btn-apple" id="submit-note-btn" onclick="submitNote()">
+        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        Submit
+      </button>
+      <div id="note-feedback"></div>
+    </div>
+
+    <div class="section-label" style="margin-top: 28px;">Recent Notes</div>
+    <div id="recent-notes-list" class="notes-list">
+      <p class="note-empty">Loading…</p>
+    </div>
   </section>
 
   <!-- Experience -->
@@ -700,9 +792,20 @@
     </div>
   </section>
 
+
+  <!-- Notes -->
+  <section id="notes" class="section">
+    <div class="section-label">All Notes</div>
+    <div id="all-notes-count" class="note-count"></div>
+    <div id="all-notes-list" class="notes-list">
+      <p class="note-empty">Loading…</p>
+    </div>
+  </section>
+
 </main>
 
 <script>
+  // ── Navigation ──
   const pills = document.querySelectorAll('.nav-pill');
   const sections = document.querySelectorAll('.section');
   let barsAnimated = false;
@@ -725,6 +828,135 @@
       bar.style.width = bar.dataset.width + '%';
     });
   }
+
+  // ── Supabase ──
+  // Replace these with your actual Supabase project URL and anon key
+  const SUPABASE_URL = 'https://pqgivixlrdwmncakutiq.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZ2l2aXhscmR3bW5jYWt1dGlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNjU3MjksImV4cCI6MjA5Mzc0MTcyOX0.KEzhPoYS6RcA2OJwkNnf3yvszD9IVjRbQG6Tl9WaEU8';
+
+  let sb = null;
+  try {
+    if (SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
+      sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
+  } catch (e) {
+    console.warn('Supabase init failed:', e.message);
+  }
+
+  let cachedNotes = [];
+
+  async function loadNotes() {
+    if (!sb) return [];
+    const { data, error } = await sb
+      .from('notes')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) { console.error('Error loading notes:', error); return []; }
+    return data || [];
+  }
+
+  async function submitNote() {
+    const authorEl = document.getElementById('note-author');
+    const commentEl = document.getElementById('note-comment');
+    const btn = document.getElementById('submit-note-btn');
+    const feedbackEl = document.getElementById('note-feedback');
+
+    const author = authorEl.value.trim();
+    const comment = commentEl.value.trim();
+
+    feedbackEl.textContent = '';
+    feedbackEl.className = '';
+
+    if (!author) {
+      feedbackEl.textContent = 'Please enter your name.';
+      feedbackEl.className = 'form-error';
+      return;
+    }
+    if (!comment) {
+      feedbackEl.textContent = 'Please enter a comment.';
+      feedbackEl.className = 'form-error';
+      return;
+    }
+    if (!sb) {
+      feedbackEl.textContent = 'Supabase is not configured yet. Add your URL and key to the script.';
+      feedbackEl.className = 'form-error';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = 'Submitting…';
+
+    const { error } = await sb.from('notes').insert([{ author, comment }]);
+
+    btn.disabled = false;
+    btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:#fff"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg> Submit';
+
+    if (error) {
+      feedbackEl.textContent = 'Failed to save note. Please try again.';
+      feedbackEl.className = 'form-error';
+      return;
+    }
+
+    authorEl.value = '';
+    commentEl.value = '';
+    feedbackEl.textContent = 'Note posted!';
+    feedbackEl.className = 'form-success';
+
+    cachedNotes = await loadNotes();
+    renderRecentNotes();
+    renderAllNotes();
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function noteCardHTML(note) {
+    const date = new Date(note.created_at).toLocaleDateString('en-US', {
+      year: 'numeric', month: 'short', day: 'numeric'
+    });
+    return `<div class="note-card">
+      <div class="note-header">
+        <span class="note-author">${escapeHtml(note.author)}</span>
+        <span class="note-date">${date}</span>
+      </div>
+      <p class="note-comment">${escapeHtml(note.comment)}</p>
+    </div>`;
+  }
+
+  function renderRecentNotes() {
+    const container = document.getElementById('recent-notes-list');
+    const recent = cachedNotes.slice(0, 3);
+    if (!recent.length) {
+      container.innerHTML = '<p class="note-empty">No notes yet — be the first to leave one!</p>';
+      return;
+    }
+    container.innerHTML = recent.map(noteCardHTML).join('');
+  }
+
+  function renderAllNotes() {
+    const container = document.getElementById('all-notes-list');
+    const countEl = document.getElementById('all-notes-count');
+    if (!cachedNotes.length) {
+      countEl.textContent = '';
+      container.innerHTML = '<p class="note-empty">No notes yet.</p>';
+      return;
+    }
+    countEl.textContent = cachedNotes.length + (cachedNotes.length === 1 ? ' note' : ' notes');
+    container.innerHTML = cachedNotes.map(noteCardHTML).join('');
+  }
+
+  // Initial load
+  (async () => {
+    cachedNotes = await loadNotes();
+    renderRecentNotes();
+    renderAllNotes();
+  })();
 </script>
 
 </body>
